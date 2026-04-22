@@ -47,6 +47,10 @@ export function SmartInsights({ results, userType, titleOverride }: { results: T
     vatPayable,
   } = results;
 
+  const BRACKET_1 = 2_200_000; // 10% → 20% boundary (taxable income)
+  const BRACKET_2 = 9_200_000; // 20% → 25% boundary (taxable income)
+  const PROXIMITY = 600_000;
+
   const insights: Insight[] = [];
 
   if (grossAnnualIncome === 0) {
@@ -128,6 +132,29 @@ export function SmartInsights({ results, userType, titleOverride }: { results: T
       icon: '🚨',
       title: `Non-compliance penalty adds ${formatNaira(penalty)}`,
       body: `A 40% penalty has been added to your income tax. Filing and paying on time avoids this. FIRS deadline is typically March 31 each year.`,
+    });
+  }
+
+  // Bracket proximity tips — before filing reminder
+  if (!isExempt && taxableIncome > BRACKET_1 && taxableIncome <= BRACKET_1 + PROXIMITY) {
+    const gap = taxableIncome - BRACKET_1;
+    const saving = Math.round(gap * 0.10);
+    insights.push({
+      type: 'tip',
+      icon: '🎯',
+      title: `You're just ${formatNaira(gap, true)} from a lower tax band`,
+      body: `If you add ${formatNaira(gap, true)} more in deductible allowances, your entire taxable income falls into the 10% band. That's a potential saving of ${formatNaira(saving)}/year.`,
+    });
+  }
+
+  if (!isExempt && taxableIncome > BRACKET_2 && taxableIncome <= BRACKET_2 + PROXIMITY) {
+    const gap = taxableIncome - BRACKET_2;
+    const saving = Math.round(gap * 0.05); // diff between 25% and 20%
+    insights.push({
+      type: 'tip',
+      icon: '🎯',
+      title: `${formatNaira(gap, true)} more in reliefs keeps you in the 20% band`,
+      body: `You're slightly into the 25% bracket. Adding ${formatNaira(gap, true)} in allowable deductions would keep all your income in the 20% band and save you ${formatNaira(saving)}.`,
     });
   }
 

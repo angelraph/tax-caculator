@@ -1,15 +1,25 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { TaxResults } from '@/types/tax';
 import { formatNaira } from '@/lib/formatters';
 
 export function IncomeBar({ results }: { results: TaxResults }) {
   const { grossAnnualIncome, totalObligation, isExempt } = results;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 80);
+    return () => clearTimeout(t);
+  }, []);
+
   if (grossAnnualIncome === 0) return null;
 
   const takeHome = grossAnnualIncome - totalObligation;
   const taxPct = Math.min((totalObligation / grossAnnualIncome) * 100, 100);
   const keepPct = 100 - taxPct;
+  const displayTaxPct = mounted ? taxPct : 0;
+  const displayKeepPct = mounted ? keepPct : 0;
 
   return (
     <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
@@ -27,10 +37,10 @@ export function IncomeBar({ results }: { results: TaxResults }) {
 
       {/* Segmented bar */}
       <div className="h-8 rounded-xl overflow-hidden flex mb-3 bg-slate-100 dark:bg-slate-700">
-        {!isExempt && taxPct > 0 && (
+        {!isExempt && displayTaxPct > 0 && (
           <div
-            className="h-full bg-rose-400 dark:bg-rose-500 flex items-center justify-center transition-all duration-700"
-            style={{ width: `${taxPct}%` }}
+            className="h-full bg-rose-400 dark:bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out"
+            style={{ width: `${displayTaxPct}%` }}
           >
             {taxPct > 8 && (
               <span className="text-[10px] font-bold text-white">{taxPct.toFixed(1)}%</span>
@@ -38,8 +48,8 @@ export function IncomeBar({ results }: { results: TaxResults }) {
           </div>
         )}
         <div
-          className="h-full bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center transition-all duration-700"
-          style={{ width: `${keepPct}%` }}
+          className="h-full bg-emerald-500 dark:bg-emerald-600 flex items-center justify-center transition-all duration-700 ease-out"
+          style={{ width: `${displayKeepPct}%` }}
         >
           {keepPct > 8 && (
             <span className="text-[10px] font-bold text-white">{keepPct.toFixed(1)}%</span>
