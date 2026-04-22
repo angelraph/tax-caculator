@@ -1,21 +1,23 @@
 'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { TaxInputs, VATCategory } from '@/types/tax';
+import { TaxInputs, VATCategory, UserType } from '@/types/tax';
 import { calculateTax } from '@/lib/taxCalculations';
 import { parseNairaInput, encodeShareable, decodeShareable } from '@/lib/formatters';
 import { ResultsPanel } from './ResultsPanel';
 import { InputField } from './InputField';
 import { StepWizard } from './StepWizard';
 import { StepMeta } from './StepIndicator';
+import { UserTypeSelector } from './UserTypeSelector';
 
-// ─── Wizard step definitions ───────────────────────────────────────────────
+// ─── Wizard step definitions ────────────────────────────────────────────────
 const STEPS: StepMeta[] = [
-  { id: 1, emoji: '💼', label: 'Income',    title: 'How much do you earn?',               subtitle: 'Tell us your monthly or yearly pay' },
-  { id: 2, emoji: '🧾', label: 'Reliefs',   title: 'Do you have any allowances?',         subtitle: 'These reduce how much tax you pay' },
-  { id: 3, emoji: '🛒', label: 'Shopping',  title: 'Did you buy anything major?',          subtitle: 'We\'ll calculate the sales tax (VAT) for you' },
-  { id: 4, emoji: '📋', label: 'Filing',    title: 'Have you been filing your taxes?',     subtitle: 'Late filers pay an extra penalty' },
-  { id: 5, emoji: '🎯', label: 'Results',   title: 'Here is your tax picture',             subtitle: 'See exactly what you owe and tips to reduce it' },
+  { id: 1, emoji: '👤', label: 'Profile',  title: 'Tell us about yourself',              subtitle: 'This helps us personalise your tax results' },
+  { id: 2, emoji: '💼', label: 'Income',   title: 'How much do you earn?',               subtitle: 'Don\'t worry — this stays on your device and is never sent anywhere' },
+  { id: 3, emoji: '🧾', label: 'Reliefs',  title: 'Do you have any allowances?',         subtitle: 'These are legal amounts that reduce how much tax you pay' },
+  { id: 4, emoji: '🛒', label: 'Shopping', title: 'Did you buy anything major?',          subtitle: 'We\'ll calculate the sales tax (VAT) for you' },
+  { id: 5, emoji: '📋', label: 'Filing',   title: 'Have you been filing your taxes?',     subtitle: 'Late filers pay an extra 40% penalty on their tax bill' },
+  { id: 6, emoji: '🎯', label: 'Results',  title: 'Here is your tax picture',             subtitle: 'See exactly what you owe and personalised tips to reduce it' },
 ];
 
 const DEFAULT_INPUTS: TaxInputs = {
@@ -76,6 +78,7 @@ function InfoBox({ children }: { children: React.ReactNode }) {
 // ─── Main calculator ─────────────────────────────────────────────────────────
 export function TaxCalculator() {
   const [currentStep, setCurrentStep] = useState<number>(1);
+  const [userType, setUserType] = useState<UserType | null>(null);
   const [raw, setRaw] = useState<Record<string, string>>({
     grossIncome: '',
     housingRelief: '',
@@ -108,7 +111,7 @@ export function TaxCalculator() {
       const decoded = decodeShareable(shared);
       if (decoded) {
         applyDecoded(decoded as Partial<TaxInputs>);
-        setCurrentStep(1);
+        setCurrentStep(2); // Start at income step when loading a shared link
         return;
       }
     }
@@ -116,11 +119,17 @@ export function TaxCalculator() {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
       try {
-        const parsed = JSON.parse(stored) as { inputs: TaxInputs; raw: Record<string, string>; step?: number };
+        const parsed = JSON.parse(stored) as {
+          inputs: TaxInputs;
+          raw: Record<string, string>;
+          step?: number;
+          userType?: UserType | null;
+        };
         setInputs(parsed.inputs);
         setRaw(parsed.raw);
+        if (parsed.userType) setUserType(parsed.userType);
         // Never auto-restore to results step
-        setCurrentStep(Math.min(parsed.step ?? 1, 4));
+        setCurrentStep(Math.min(parsed.step ?? 1, STEPS.length - 1));
       } catch {
         // ignore corrupt storage
       }
@@ -129,8 +138,8 @@ export function TaxCalculator() {
 
   // ── Persist to localStorage on change ──
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ inputs, raw, step: currentStep }));
-  }, [inputs, raw, currentStep]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ inputs, raw, step: currentStep, userType }));
+  }, [inputs, raw, currentStep, userType]);
 
   // ── Field setter ──
   const setField = useCallback((field: keyof TaxInputs, rawVal: string) => {
@@ -147,12 +156,13 @@ export function TaxCalculator() {
   const skipReliefs = () => {
     setInputs(p => ({ ...p, housingRelief: 0, dependentRelief: 0, pensionContribution: 0, otherDeductions: 0 }));
     setRaw(p => ({ ...p, housingRelief: '', dependentRelief: '', pensionContribution: '', otherDeductions: '' }));
-    setCurrentStep(3);
+    setCurrentStep(4); // Skip to Shopping step
   };
 
   // ── Actions ──
   const handleReset = () => {
     setInputs(DEFAULT_INPUTS);
+    setUserType(null);
     setRaw({ grossIncome: '', housingRelief: '', dependentRelief: '', pensionContribution: '', otherDeductions: '', vatAmount: '' });
     setCurrentStep(1);
     localStorage.removeItem(STORAGE_KEY);
@@ -161,7 +171,7 @@ export function TaxCalculator() {
 
   const handleDownload = () => window.print();
 
-  const handleShare = async () => {
+  const handleCopyLink = async () => {
     const encoded = encodeShareable(inputs as unknown as Record<string, unknown>);
     const url = `${window.location.origin}${window.location.pathname}?data=${encoded}`;
     try {
@@ -178,11 +188,27 @@ export function TaxCalculator() {
     setTimeout(() => setShareSuccess(false), 2500);
   };
 
-  const canProceedStep1 = inputs.grossIncome > 0;
+  // ── canProceed per step ──
+  const canProceed =
+    currentStep === 1 ? userType !== null :
+    currentStep === 2 ? inputs.grossIncome > 0 :
+    true;
+
+  const canProceedHint =
+    currentStep === 1 ? 'Please select your profile type to continue.' :
+    currentStep === 2 ? 'Please enter your income amount to continue.' :
+    undefined;
 
   // ── Step content ──────────────────────────────────────────────────────────
 
   const step1 = (
+    <>
+      <StepHeading emoji="👤" title="Tell us about yourself" subtitle="Select the option that best describes how you earn money. This personalises your results." />
+      <UserTypeSelector selected={userType} onSelect={setUserType} />
+    </>
+  );
+
+  const step2 = (
     <>
       <StepHeading emoji="💼" title="How much do you earn?" subtitle="Don't worry — this stays on your device and is never sent anywhere." />
 
@@ -226,7 +252,7 @@ export function TaxCalculator() {
     </>
   );
 
-  const step2 = (
+  const step3 = (
     <>
       <StepHeading emoji="🧾" title="Do you have any allowances?" subtitle="Allowances are official amounts that reduce how much tax you pay. If you have none, skip this step." />
 
@@ -267,7 +293,7 @@ export function TaxCalculator() {
     </>
   );
 
-  const step3 = (
+  const step4 = (
     <>
       <StepHeading emoji="🛒" title="Did you buy anything major?" subtitle="VAT is a small extra charge the government adds to the price of most things you buy. We'll calculate it for you." />
 
@@ -316,7 +342,7 @@ export function TaxCalculator() {
     </>
   );
 
-  const step4 = (
+  const step5 = (
     <>
       <StepHeading emoji="📋" title="Have you been filing your taxes?" subtitle="Tax filing means submitting your income report to FIRS (the tax office) every year." />
 
@@ -371,7 +397,7 @@ export function TaxCalculator() {
           Let's calculate your 2026 tax
         </h2>
         <p className="mt-2 text-slate-500 dark:text-slate-400 text-sm max-w-md mx-auto">
-          Answer 4 simple questions and we'll tell you exactly what you owe — in plain language.
+          Answer 5 simple questions and we'll tell you exactly what you owe — in plain language.
         </p>
       </div>
 
@@ -382,23 +408,26 @@ export function TaxCalculator() {
         onNext={goNext}
         onBack={goBack}
         onSkipReliefs={skipReliefs}
-        canProceed={currentStep === 1 ? canProceedStep1 : true}
-        isResultsStep={currentStep === 5}
+        canProceed={canProceed}
+        canProceedHint={canProceedHint}
+        isResultsStep={currentStep === STEPS.length}
         results={results}
       >
         {currentStep === 1 && step1}
         {currentStep === 2 && step2}
         {currentStep === 3 && step3}
         {currentStep === 4 && step4}
-        {currentStep === 5 && (
+        {currentStep === 5 && step5}
+        {currentStep === 6 && (
           <ResultsPanel
             results={results}
+            inputs={inputs}
+            userType={userType}
             onDownload={handleDownload}
-            onShare={handleShare}
+            onCopyLink={handleCopyLink}
             onReset={handleReset}
             shareSuccess={shareSuccess}
             friendlyMode
-            showInsights
           />
         )}
       </StepWizard>

@@ -1,17 +1,24 @@
 'use client';
 
-import { TaxResults } from '@/types/tax';
+import { TaxResults, TaxInputs, UserType } from '@/types/tax';
 import { formatNaira, formatPercent } from '@/lib/formatters';
 import { SmartInsights } from './SmartInsights';
+import { CalculationBreakdown } from './CalculationBreakdown';
+import { IncomeBar } from './IncomeBar';
+import { TaxSavingsSimulator } from './TaxSavingsSimulator';
+import { ComplianceIndicator } from './ComplianceIndicator';
+import { NextSteps } from './NextSteps';
+import { ShareActions } from './ShareActions';
 
 interface ResultsPanelProps {
   results: TaxResults;
+  inputs: TaxInputs;
+  userType: UserType | null;
   onDownload: () => void;
-  onShare: () => void;
+  onCopyLink: () => void;
   onReset: () => void;
   shareSuccess: boolean;
   friendlyMode?: boolean;
-  showInsights?: boolean;
 }
 
 function ResultRow({
@@ -91,12 +98,13 @@ function BracketBar({ rate, taxable, max }: { rate: number; taxable: number; max
 
 export function ResultsPanel({
   results,
+  inputs,
+  userType,
   onDownload,
-  onShare,
+  onCopyLink,
   onReset,
   shareSuccess,
   friendlyMode = false,
-  showInsights = false,
 }: ResultsPanelProps) {
   const {
     grossAnnualIncome,
@@ -143,7 +151,7 @@ export function ResultsPanel({
 
   return (
     <div className="space-y-4 print:space-y-3">
-      {/* Summary Card — exempt variant */}
+      {/* ── Summary Card ────────────────────────────────────────────────── */}
       {isExempt ? (
         <div className="rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 p-5 text-white shadow-xl shadow-emerald-900/20 print:shadow-none">
           <div className="flex items-center gap-3 mb-3">
@@ -158,7 +166,6 @@ export function ResultsPanel({
           </p>
         </div>
       ) : (
-        /* Summary Card — standard */
         <div className="rounded-2xl bg-gradient-to-br from-emerald-700 to-emerald-900 p-5 text-white shadow-xl shadow-emerald-900/20 print:shadow-none">
           {friendlyMode && (
             <p className="text-emerald-200 text-sm mb-2 leading-relaxed">
@@ -185,7 +192,10 @@ export function ResultsPanel({
         </div>
       )}
 
-      {/* Breakdown */}
+      {/* ── Income Bar ──────────────────────────────────────────────────── */}
+      <IncomeBar results={results} />
+
+      {/* ── Breakdown Table ─────────────────────────────────────────────── */}
       <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-1">{labels.breakdown}</h3>
         <div className="divide-y divide-slate-100 dark:divide-slate-700/50">
@@ -221,7 +231,7 @@ export function ResultsPanel({
         </div>
       </div>
 
-      {/* Tax Bracket Visualizer */}
+      {/* ── Tax Bracket Visualizer ──────────────────────────────────────── */}
       {!isExempt && brackets.length > 0 && (
         <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm print:hidden">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white mb-3">
@@ -236,50 +246,42 @@ export function ResultsPanel({
         </div>
       )}
 
-      {/* Smart Insights — shown only in friendly/wizard mode */}
-      {showInsights && (
-        <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm print:hidden">
-          <SmartInsights results={results} titleOverride="Tips for You" />
-        </div>
-      )}
+      {/* ── Step-by-Step Calculation Breakdown ──────────────────────────── */}
+      <CalculationBreakdown results={results} />
 
-      {/* Actions */}
+      {/* ── Tax Savings Simulator ───────────────────────────────────────── */}
+      <TaxSavingsSimulator inputs={inputs} currentResults={results} />
+
+      {/* ── Compliance Risk Indicator ───────────────────────────────────── */}
+      <ComplianceIndicator results={results} />
+
+      {/* ── Smart Insights ──────────────────────────────────────────────── */}
+      <div className="rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 shadow-sm print:hidden">
+        <SmartInsights results={results} userType={userType} titleOverride="Tips for You" />
+      </div>
+
+      {/* ── What To Do Next ─────────────────────────────────────────────── */}
+      <NextSteps userType={userType} results={results} />
+
+      {/* ── Share Your Results ──────────────────────────────────────────── */}
+      <ShareActions
+        results={results}
+        inputs={inputs}
+        shareSuccess={shareSuccess}
+        onCopyLink={onCopyLink}
+      />
+
+      {/* ── Actions ─────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2 print:hidden">
-        <div className="flex gap-2">
-          <button
-            onClick={onDownload}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-            </svg>
-            Download PDF
-          </button>
-          <button
-            onClick={onShare}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-              shareSuccess
-                ? 'bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400'
-                : 'border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
-          >
-            {shareSuccess ? (
-              <>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                </svg>
-                Link Copied!
-              </>
-            ) : (
-              <>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
-                </svg>
-                Share Results
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={onDownload}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="w-4 h-4">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+          </svg>
+          Download PDF
+        </button>
         <button
           onClick={onReset}
           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-dashed border-slate-200 dark:border-slate-600 transition-colors"

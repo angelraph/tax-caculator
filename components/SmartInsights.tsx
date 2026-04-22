@@ -1,6 +1,6 @@
 'use client';
 
-import { TaxResults } from '@/types/tax';
+import { TaxResults, UserType } from '@/types/tax';
 import { formatNaira } from '@/lib/formatters';
 
 interface Insight {
@@ -33,7 +33,7 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-export function SmartInsights({ results, titleOverride }: { results: TaxResults; titleOverride?: string }) {
+export function SmartInsights({ results, userType, titleOverride }: { results: TaxResults; userType?: UserType | null; titleOverride?: string }) {
   const {
     grossAnnualIncome,
     isExempt,
@@ -137,6 +137,30 @@ export function SmartInsights({ results, titleOverride }: { results: TaxResults;
       icon: '📅',
       title: 'File on time to avoid penalties',
       body: `Your PAYE or self-assessment return must be filed by March 31, 2027 for the 2026 tax year. Late filing attracts a 40% penalty on tax due.`,
+    });
+  }
+
+  // User-type specific insights
+  if (userType === 'salary') {
+    insights.push({
+      type: 'info',
+      icon: '🏢',
+      title: 'Verify your PAYE deductions with HR',
+      body: 'Ask your payroll or HR team to confirm the monthly PAYE amount deducted from your salary matches this estimate. Discrepancies should be corrected before year-end filing.',
+    });
+  } else if (userType === 'freelancer') {
+    insights.push({
+      type: 'warning',
+      icon: '📝',
+      title: 'You must file your own self-assessment return',
+      body: 'Freelancers and self-employed individuals are fully responsible for filing their own annual returns by March 31. Your clients do not deduct tax on your behalf — this is your responsibility.',
+    });
+  } else if (userType === 'business') {
+    insights.push({
+      type: 'info',
+      icon: '🏛️',
+      title: 'Company income is taxed separately under CIT',
+      body: 'If your business is incorporated, it pays Company Income Tax (CIT) at 20–30% on its profits — separate from your personal income tax shown here. Work with an accountant to separate the two.',
     });
   }
 

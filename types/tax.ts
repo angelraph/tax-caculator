@@ -1,5 +1,6 @@
 export type IncomeType = 'monthly' | 'annual';
 export type VATCategory = 'essential' | 'non-essential';
+export type UserType = 'salary' | 'freelancer' | 'business';
 
 export interface TaxInputs {
   incomeType: IncomeType;

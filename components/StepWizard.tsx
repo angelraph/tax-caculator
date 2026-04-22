@@ -12,6 +12,7 @@ interface StepWizardProps {
   onBack: () => void;
   onSkipReliefs: () => void;
   canProceed: boolean;
+  canProceedHint?: string;
   isResultsStep: boolean;
   results: TaxResults;
   children: React.ReactNode;
@@ -25,13 +26,14 @@ export function StepWizard({
   onBack,
   onSkipReliefs,
   canProceed,
+  canProceedHint,
   isResultsStep,
   results,
   children,
 }: StepWizardProps) {
   const isFirstStep = currentStep === 1;
-  const isLastInputStep = currentStep === 4;
-  const isReliefsStep = currentStep === 2;
+  const isLastInputStep = currentStep === totalSteps - 1;
+  const isReliefsStep = currentStep === 3;
   const nextLabel = isLastInputStep ? 'See My Results →' : 'Next Step →';
 
   return (
@@ -96,7 +98,7 @@ export function StepWizard({
           {/* Validation hint */}
           {!canProceed && (
             <p className="text-xs text-rose-500 dark:text-rose-400 text-right">
-              Please enter your income amount to continue.
+              {canProceedHint ?? 'Please complete this step to continue.'}
             </p>
           )}
         </div>

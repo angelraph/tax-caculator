@@ -9,33 +9,41 @@ interface MiniPreviewProps {
 }
 
 export function MiniPreview({ step, results }: MiniPreviewProps) {
-  const { monthlyIncomeTax, isExempt, totalReliefs, vatPayable, penalty } = results;
+  const { monthlyIncomeTax, isExempt, totalReliefs, vatPayable, penalty, marginalRate } = results;
 
   let label = '';
   let value = '';
   let valueColor = 'text-emerald-700 dark:text-emerald-400';
 
   if (step === 1) {
+    // Profile step — no calculation yet
+    label = 'Personalising your experience';
+    value = 'Almost ready…';
+    valueColor = 'text-slate-400 dark:text-slate-500';
+  } else if (step === 2) {
+    // Income step
     label = 'Est. monthly income tax';
     if (results.grossAnnualIncome === 0) {
       value = '—';
       valueColor = 'text-slate-400 dark:text-slate-500';
     } else if (isExempt) {
-      value = 'Exempt — ₦0 tax!';
+      value = 'Exempt — ₦0 tax! 🎉';
       valueColor = 'text-emerald-600 dark:text-emerald-400 font-bold';
     } else {
-      value = formatNaira(monthlyIncomeTax) + '/mo';
+      value = `${formatNaira(monthlyIncomeTax)}/mo`;
     }
-  } else if (step === 2) {
+  } else if (step === 3) {
+    // Reliefs step
     label = 'Your reliefs save you';
     if (totalReliefs === 0) {
       value = '—';
       valueColor = 'text-slate-400 dark:text-slate-500';
     } else {
-      const savedTax = totalReliefs * results.marginalRate;
-      value = formatNaira(savedTax) + '/yr';
+      const savedTax = totalReliefs * marginalRate;
+      value = `${formatNaira(savedTax)}/yr`;
     }
-  } else if (step === 3) {
+  } else if (step === 4) {
+    // VAT step
     label = 'VAT on this purchase';
     if (vatPayable === 0) {
       value = '—';
@@ -43,13 +51,14 @@ export function MiniPreview({ step, results }: MiniPreviewProps) {
     } else {
       value = formatNaira(vatPayable);
     }
-  } else if (step === 4) {
+  } else if (step === 5) {
+    // Filing step
     label = 'Non-compliance penalty';
     if (penalty === 0) {
-      value = 'No penalty — great!';
+      value = 'No penalty — great! ✅';
       valueColor = 'text-emerald-600 dark:text-emerald-400';
     } else {
-      value = '+' + formatNaira(penalty);
+      value = `+${formatNaira(penalty)}`;
       valueColor = 'text-rose-600 dark:text-rose-400';
     }
   }
