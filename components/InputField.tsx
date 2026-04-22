@@ -1,5 +1,7 @@
 'use client';
 
+import { HelpTooltip } from './HelpTooltip';
+
 interface InputFieldProps {
   label: string;
   value: string;
@@ -8,6 +10,7 @@ interface InputFieldProps {
   suffix?: string;
   placeholder?: string;
   hint?: string;
+  helpText?: string;
   min?: number;
 }
 
@@ -19,11 +22,11 @@ export function InputField({
   suffix,
   placeholder = '0.00',
   hint,
+  helpText,
   min = 0,
 }: InputFieldProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^\d.]/g, '');
-    // Allow only one decimal point
     const parts = raw.split('.');
     const cleaned = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : raw;
     onChange(cleaned);
@@ -31,9 +34,12 @@ export function InputField({
 
   return (
     <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-        {label}
-      </label>
+      <div className="flex items-start flex-wrap gap-x-1">
+        <label className="text-sm font-medium text-slate-700 dark:text-slate-300">
+          {label}
+        </label>
+        {helpText && <HelpTooltip text={helpText} />}
+      </div>
       <div className="relative flex items-center">
         {prefix && (
           <span className="absolute left-3 text-sm font-semibold text-slate-500 dark:text-slate-400 pointer-events-none select-none">

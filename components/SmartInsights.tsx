@@ -33,7 +33,7 @@ function InsightCard({ insight }: { insight: Insight }) {
   );
 }
 
-export function SmartInsights({ results }: { results: TaxResults }) {
+export function SmartInsights({ results, titleOverride }: { results: TaxResults; titleOverride?: string }) {
   const {
     grossAnnualIncome,
     isExempt,
@@ -59,7 +59,7 @@ export function SmartInsights({ results }: { results: TaxResults }) {
     return (
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-          Smart Insights
+          {titleOverride ?? 'Smart Insights'}
         </h2>
         {insights.map((ins, i) => (
           <InsightCard key={i} insight={ins} />
