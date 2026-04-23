@@ -216,16 +216,16 @@ export function TaxCalculator() {
         {/* Monthly / Annual toggle */}
         <div>
           <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-            {userType === 'business' ? 'How do you receive your revenue?' : 'How do you receive your pay?'}
+            {userType === 'business' ? 'How do you receive your revenue?' : userType === 'freelancer' ? 'How do you receive your income?' : 'How do you receive your pay?'}
           </p>
           <div className="flex bg-slate-100 dark:bg-slate-700 rounded-xl p-1 gap-1">
             <ToggleButton
-              label={userType === 'business' ? 'Monthly revenue' : 'Monthly salary'}
+              label={userType === 'business' ? 'Monthly revenue' : userType === 'freelancer' ? 'Monthly income' : 'Monthly salary'}
               active={inputs.incomeType === 'monthly'}
               onClick={() => setInputs(p => ({ ...p, incomeType: 'monthly' }))}
             />
             <ToggleButton
-              label={userType === 'business' ? 'Yearly revenue' : 'Yearly salary'}
+              label={userType === 'business' ? 'Yearly revenue' : userType === 'freelancer' ? 'Annual income' : 'Yearly salary'}
               active={inputs.incomeType === 'annual'}
               onClick={() => setInputs(p => ({ ...p, incomeType: 'annual' }))}
             />
@@ -234,8 +234,8 @@ export function TaxCalculator() {
 
         <InputField
           label={inputs.incomeType === 'monthly'
-            ? (userType === 'business' ? 'Enter your monthly revenue' : 'Enter your monthly salary')
-            : (userType === 'business' ? 'Enter your yearly revenue' : 'Enter your yearly salary')
+            ? (userType === 'business' ? 'Enter your monthly revenue' : userType === 'freelancer' ? 'Enter your monthly income' : 'Enter your monthly salary')
+            : (userType === 'business' ? 'Enter your yearly revenue' : userType === 'freelancer' ? 'Enter your annual income' : 'Enter your yearly salary')
           }
           value={raw.grossIncome}
           onChange={v => setField('grossIncome', v)}
