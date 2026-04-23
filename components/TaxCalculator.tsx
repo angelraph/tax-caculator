@@ -215,15 +215,17 @@ export function TaxCalculator() {
       <div className="space-y-4">
         {/* Monthly / Annual toggle */}
         <div>
-          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">How do you receive your pay?</p>
+          <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            {userType === 'business' ? 'How do you receive your revenue?' : 'How do you receive your pay?'}
+          </p>
           <div className="flex bg-slate-100 dark:bg-slate-700 rounded-xl p-1 gap-1">
             <ToggleButton
-              label="Monthly salary"
+              label={userType === 'business' ? 'Monthly revenue' : 'Monthly salary'}
               active={inputs.incomeType === 'monthly'}
               onClick={() => setInputs(p => ({ ...p, incomeType: 'monthly' }))}
             />
             <ToggleButton
-              label="Yearly salary"
+              label={userType === 'business' ? 'Yearly revenue' : 'Yearly salary'}
               active={inputs.incomeType === 'annual'}
               onClick={() => setInputs(p => ({ ...p, incomeType: 'annual' }))}
             />
@@ -231,7 +233,10 @@ export function TaxCalculator() {
         </div>
 
         <InputField
-          label={inputs.incomeType === 'monthly' ? 'Enter your monthly salary' : 'Enter your yearly salary'}
+          label={inputs.incomeType === 'monthly'
+            ? (userType === 'business' ? 'Enter your monthly revenue' : 'Enter your monthly salary')
+            : (userType === 'business' ? 'Enter your yearly revenue' : 'Enter your yearly salary')
+          }
           value={raw.grossIncome}
           onChange={v => setField('grossIncome', v)}
           placeholder={inputs.incomeType === 'monthly' ? 'e.g. 150000' : 'e.g. 1800000'}
